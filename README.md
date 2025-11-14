@@ -107,8 +107,8 @@ Download batch reports with **one click**.
 
 ## 👥 Team Members
 
-- **Sanjana Patil **
-- **Lavanya Talele **
-- **Aditya Raj **
+- **Sanjana Patil**
+- **Lavanya Talele**
+- **Aditya Raj**
 
 **Supervisor:** Ms. Hemlata Biradar  
