@@ -107,8 +107,13 @@ Download batch reports with **one click**.
 
 ## 👥 Team Members
 
-- **Sanjana Patil**
+- **Sanjana Patil** 
 - **Lavanya Talele**
 - **Aditya Raj**
 
 **Supervisor:** Ms. Hemlata Biradar  
+
+
+## 📬 Contact Details
+### 👩‍💻 Sanjana Patil  
+- 📧 Email: *patilsanjana398@gmail.com* 
