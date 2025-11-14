@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ALUPREDICT</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-image: url('/static/wire_rod_background.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 600px;
+      padding: 30px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #ffffff;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    label {
+      align-self: flex-start;
+      margin-left: 15%;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #ffffff;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    input {
+      width: 70%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      background-color: rgba(255, 255, 255, 0.85);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: center;
+      margin-top: 25px;
+    }
+
+    .btn {
+      background-color: #312456;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      text-transform: uppercase;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 10px;
+      font-size: 16px;
+      transition: background-color 0.3s ease;
+    }
+
+    .btn:hover {
+      background-color: #563d7c;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>ALUPREDICT</h1>
+    </header>
+    <form id="loginForm">
+      <div class="input-group">
+        <label for="workerId">Worker ID:</label>
+        <input type="text" id="workerId" name="workerId" required />
+      </div>
+      <div class="input-group">
+        <label for="workerName">Worker Name:</label>
+        <input type="text" id="workerName" name="workerName" required />
+      </div>
+      <div class="input-group">
+        <label for="date">Date:</label>
+        <input type="date" id="date" name="date" required />
+      </div>
+      <div class="input-group">
+        <label for="batchNumber">Batch Number:</label>
+        <input type="text" id="batchNumber" name="batchNumber" required />
+      </div>
+      <div class="buttons">
+        <button type="submit" class="btn">Start</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // Auto-fill today's date
+      document.getElementById("date").valueAsDate = new Date();
+
+      // 🚀 Store data to localStorage & redirect
+      document.getElementById("loginForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const workerName = document.getElementById("workerName").value;
+        const workerId = document.getElementById("workerId").value;
+        const batchNumber = document.getElementById("batchNumber").value;
+
+        localStorage.setItem("workerName", workerName);
+        localStorage.setItem("workerId", workerId);
+        localStorage.setItem("batchNumber", batchNumber);
+
+        //window.location.href = "Predict copy 2.html";
+        window.location.href = "/predict_page";
+
+
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wire Rod Property Prediction</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #3c1053, #ad5389);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow-y: auto; /* ✅ Allows smooth scrolling */
+    }
+    .sidebar {
+      background-color: #2E2E4D;
+      min-height: 100vh;
+      padding: 20px 10px;
+    }
+    .btn-sidebar {
+      background-color: #2E2E4D;
+      border: none;
+      width: 100%;
+      text-align: left;
+      padding: 10px;
+      color: white;
+      transition: background-color 0.3s;
+      border-radius: 0;
+    }
+    .btn-sidebar:hover, .btn-sidebar.active {
+      background-color: #373760;
+      cursor: pointer;
+    }
+    .container-fluid {
+      height: 100vh;
+    }
+    .scrollable-content {
+      height: 100vh;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .card {
+      background-color: rgba(0, 0, 0, 0.3);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .form-control, .btn {
+      border-radius: 0.25rem;
+    }
+    .btn-primary, .btn-secondary, .btn-danger {
+      color: #fff;
+    }
+    .form-label {
+      color: #FFFFFF;
+      font-size: 0.8rem;
+    }
+    .form-control {
+      height: calc(1.5em + 0.75rem + 2px);
+    }
+    #results .alert {
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    #results .alert div:first-child {
+      flex: 1 1 70%;
+    }
+    #results .alert button {
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row h-100">
+      <div class="col-md-2 sidebar d-flex flex-column justify-content-between">
+        <div>
+          <button class="btn-sidebar" onclick="showPredictProperties()">Predict Properties</button>
+          <button class="btn-sidebar" onclick="showBatchHistory()">Batch History</button>
+          <button class="btn-sidebar" onclick="location.href='/dashboard'">Dashboard</button>
+        </div>
+
+        <!-- Profile Section -->
+        <div class="d-flex align-items-center p-2 mt-4" style="cursor: pointer;" onclick="showWorkerInfo()">
+          <img src="{{ url_for('static', filename='worker.png') }}" alt="Worker" style="width: 40px; height: 40px; border-radius: 50%; background-color: white; padding: 2px;" />
+          <span class="ms-2 text-white" style="font-size: 0.9rem;">Your Profile</span>
+        </div>
+      </div>
+
+      <div class="col-md-10 scrollable-content">
+        <div id="content-area"></div>
+        <div id="results" style="margin-top: 30px;"></div>
+      </div>      
+    </div>
+  </div>
+
+  <!-- Worker Info Modal -->
+  <div class="modal fade" id="workerModal" tabindex="-1" aria-labelledby="workerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="workerModalLabel">👷‍♂️ Worker Profile</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="workerProfileBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    let hasPredicted = sessionStorage.getItem("hasPredicted") === "true";
+
+
+    function showWorkerInfo() {
+      const name = localStorage.getItem("workerName") || "Unknown";
+      const workerId = localStorage.getItem("workerId") || "N/A";  // ✅ Get from localStorage
+      const batch = localStorage.getItem("batchNumber") || "N/A";
+    
+      const hour = new Date().getHours();
+      const shift = (hour >= 20 || hour < 8) ? "Night (8PM – 8AM)" : "Day (8AM – 8PM)";
+    
+      const profileHTML = `
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>ID:</strong> ${workerId}</p>
+        <p><strong>Role:</strong> Line Supervisor</p>
+        <p><strong>Shift:</strong> ${shift}</p>
+      `;
+    
+      document.getElementById("workerProfileBody").innerHTML = profileHTML;
+    
+      const modal = new bootstrap.Modal(document.getElementById('workerModal'));
+      modal.show();
+    }
+    
+
+    // ✅ Updated Classification Logic (Only 9.5 and 11.5 allowed)
+    function classifyGrade(conductivity, diameter) {
+      diameter = parseFloat(diameter);
+      conductivity = parseFloat(conductivity);
+
+      if (diameter === 9.5) {
+        if (conductivity >= 61.5) return 'WE10';
+        else if (conductivity >= 61.0) return 'WE20';
+        else return 'WC10';
+      } else if (diameter === 11.5) {
+        if (conductivity >= 61.5) return 'WE12';
+        else if (conductivity >= 61.0) return 'WE22';
+        else return 'WC12';
+      } else {
+        return 'Unknown';
+      }
+    }
+
+    function showPredictProperties() {
+      document.getElementById('content-area').innerHTML = `
+        <div class="card shadow">
+          <h2 class="text-center">🔧 Wire Rod Property Prediction System</h2>
+          <form id="predictionForm" onsubmit="submitPrediction(event)">
+            <div class="row g-2">
+              <div class="col-md-3"><label class="form-label">%Fe</label><input type="number" name="fe" class="form-control" step="any"required></div>
+              <div class="col-md-3"><label class="form-label">Emulsion Temperature</label><input type="number" name="emulsion_temp" class="form-control" step="any" required></div>
+              <div class="col-md-3"><label class="form-label">Emulsion Pressure</label><input type="number" name="emulsion_pr" class="form-control" step="any" required></div>
+              <div class="col-md-3"><label class="form-label">Rod Quench CW Exit</label><input type="number" name="rod_quench_cw_exit" class="form-control" step="any" required></div>
+              <div class="col-md-3"><label class="form-label">Rod Quench CW Entry</label><input type="number" name="rod_quench_cw_entry" class="form-control" step="any" required></div>
+              <div class="col-md-3"><label class="form-label">Casting Wheel RPM</label><input type="number" name="casting_wheel_rpm" class="form-control" step="any" required></div>
+              <div class="col-md-3"><label class="form-label">RM Motor Cooling Water Pressure</label><input type="number" name="rm_motor_cooling_water_pressure" class="form-control" step="any" required></div>
+              <div class="col-md-3"><label class="form-label">Rolling Mill Amp</label><input type="number" name="rolling_mill_amp" class="form-control" step="any" required></div>
+              <div class="col-md-3"><label class="form-label">Cooling Water Flow</label><input type="number" name="cool_water_flow" class="form-control" step="any" required></div>
+              <div class="col-md-3"><label class="form-label">Cooling Water Pressure</label><input type="number" name="cooling_water_pressure" class="form-control" step="any" required></div>
+              <div class="col-md-3"><label class="form-label">Cooling Water Temp</label><input type="number" name="cooling_water_temp" class="form-control" step="any" required></div>
+              <div class="col-md-3"><label class="form-label">Rolling Mill RPM</label><input type="number" name="rolling_mill_rpm" class="form-control" step="any" required></div>
+              <div class="col-md-3"><label class="form-label">Diameter</label>
+                <select name="diameter" class="form-control" required>
+                  <option value="" selected disabled>Select</option>
+                  <option value="9.5">9.5 mm</option>
+                  <option value="11.5">11.5 mm</option>
+                </select>
+              </div>
+              <div class="col-12 d-flex justify-content-center mt-3 gap-2">
+                <button type="submit" class="btn btn-primary">Predict</button>
+                <button type="button" class="btn btn-secondary" onclick="fillRandom()">Random Autofill</button>
+                <button type="button" class="btn btn-danger" onclick="clearScreen()">Clear Screen</button>
+              </div>
+              
+            </div>
+          </form>
+        </div>
+      `;
+    }
+
+    async function submitPrediction(event) {
+      event.preventDefault();
+    
+      const form = document.getElementById("predictionForm");
+      const formData = new FormData(form);
+    
+      // Build request body
+      const inputData = {};
+      formData.forEach((value, key) => {
+        inputData[key] = value;
+      });
+    
+      // Add metadata
+      inputData["worker_name"] = localStorage.getItem("workerName") || "Unknown";
+      inputData["batch_number"] = localStorage.getItem("batchNumber") || "Unknown";
+    
+      // Set default status
+      inputData["status"] = "Pass"; // This can be updated via toggle button after prediction
+    
+      try {
+        const response = await fetch("/predict", {
+
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(inputData),
+        });
+    
+        const result = await response.json();
+    
+        if (result.error) throw new Error(result.error);
+    
+        // Update results UI
+        const resultsHTML = `
+          <div class="alert alert-success rounded">
+            <div>
+              <h5 class="mb-2">🔍 Prediction Results:</h5>
+              <p class="mb-1"><strong>UTS:</strong> ${result.uts} MPa</p>
+              <p class="mb-1"><strong>Elongation:</strong> ${result.elongation}%</p>
+              <p class="mb-1"><strong>Conductivity:</strong> ${result.conductivity}% IACS</p>
+              <p class="mb-1"><strong>Grade:</strong> ${result.grade}</p>
+            </div>
+            <div class="ms-3 mt-2 mt-md-0 d-flex flex-column gap-2">
+              <button class="btn btn-success" onclick="saveResults()">💾 Save Results</button>
+              <button id="statusToggle" class="btn btn-outline-secondary" onclick="togglePassFail()">✔️ Status: Pass</button>
+            </div>
+          </div>
+        `;
+    
+        const resultsDiv = document.getElementById("results");
+        resultsDiv.innerHTML = resultsHTML;
+    
+        // ✅ Save state to sessionStorage so it persists on reload
+        sessionStorage.setItem("hasPredicted", "true");
+        sessionStorage.setItem("lastResults", resultsHTML);
+    
+        // Scroll to bottom of scrollable-content area
+        document.querySelector('.scrollable-content').scrollTo({
+  top: document.querySelector('.scrollable-content').scrollHeight,
+  behavior: 'smooth'
+});
+
+    
+      } catch (err) {
+        alert("❌ Prediction failed: " + err.message);
+        console.error(err);
+      }
+    
+      console.log("Form submitted without reload!");
+    }
+    
+    
+  
+    function togglePassFail() {
+      const btn = document.getElementById("statusToggle");
+      if (btn.innerText.includes("Pass")) {
+        btn.innerText = "❌ Status: Fail";
+        btn.classList.remove("btn-outline-secondary");
+        btn.classList.add("btn-outline-danger");
+      } else {
+        btn.innerText = "✔️ Status: Pass";
+        btn.classList.remove("btn-outline-danger");
+        btn.classList.add("btn-outline-secondary");
+      }
+    }
+
+    async function saveResults() {
+      const statusBtn = document.getElementById("statusToggle");
+      const status = statusBtn.innerText.includes("Fail") ? "Fail" : "Pass";
+    
+      const payload = {
+        worker_name: localStorage.getItem("workerName"),
+        batch_number: localStorage.getItem("batchNumber"),
+        status: status,
+      };
+    
+      try {
+        const response = await fetch("/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+    
+        const result = await response.json();
+        if (result.success) {
+          alert("✅ Results saved successfully!");
+        } else {
+          alert("⚠️ Save failed.");
+        }
+      } catch (err) {
+        alert("❌ Error saving results: " + err.message);
+      }
+    }
+    
+    function fillRandom() 
+    {
+      const ranges = {
+        fe: [0.18, 0.35], emulsion_temp: [60, 90], emulsion_pr: [1.0, 2.5],
+        rod_quench_cw_exit: [1.0, 20.0], rod_quench_cw_entry: [100.0, 500.0],
+        casting_wheel_rpm: [1.5, 2.5], rm_motor_cooling_water_pressure: [1.0, 3.5],
+        rolling_mill_amp: [200.0, 450.0], cool_water_flow: [100.0, 210.0],
+        cooling_water_pressure: [1.5, 4.0], cooling_water_temp: [25.0, 45.0],
+        rolling_mill_rpm: [650.0, 950.0]
+      };
+      Object.entries(ranges).forEach(([key, [min, max]]) => {
+        const input = document.querySelector(`input[name="${key}"]`);
+        if (input) input.value = (Math.random() * (max - min) + min).toFixed(2);
+      });
+      const dia = document.querySelector('select[name="diameter"]');
+      if (dia) dia.value = ["9.5", "11.5"][Math.floor(Math.random() * 2)];
+    }
+
+    function clearScreen() {
+      document.querySelectorAll('input').forEach(i => i.value = '');
+      document.querySelector('select[name="diameter"]').selectedIndex = 0;
+      document.getElementById('results').innerHTML = '';
+    }
+
+    async function showBatchHistory() {
+      document.getElementById("results").innerHTML = '';
+    
+      document.getElementById("content-area").innerHTML = `
+        <div class="card shadow">
+          <h2 class="text-center mb-4">📄 Batch History</h2>
+    
+          <!-- Filters -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-3"><input type="text" class="form-control" placeholder="Search by Worker" id="filterWorker"></div>
+            <div class="col-md-3"><input type="date" class="form-control" id="filterDate"></div>
+            <div class="col-md-3"><input type="text" class="form-control" placeholder="Batch No" id="filterBatch"></div>
+            <div class="col-md-3 d-flex gap-2">
+              <button class="btn btn-primary w-100" onclick="applyFilters()">Apply Filter</button>
+              <button class="btn btn-secondary" onclick="resetFilters()">Reset</button>
+            </div>
+          </div>
+    
+          <div id="batchHistoryList"></div>
+        </div>
+      `;
+    
+      try {
+        const res = await fetch("/get_history");
+        const history = await res.json();
+    
+        history.forEach(entry => {
+          const section = generateBatchSection(entry.worker, entry.date, entry.batch, entry.records);
+          document.getElementById("batchHistoryList").innerHTML += section;
+        });
+    
+      } catch (err) {
+        alert("⚠️ Failed to load batch history.");
+        console.error(err);
+      }
+    }
+    
+
+function generateBatchSection(worker, date, batch, records) {
+  const id = `batch-${worker}-${batch}`.replace(/\s+/g, '-');
+  return `
+    <div class="accordion mb-3" id="accordion-${id}">
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="heading-${id}">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${id}">
+            👷 Worker: <strong class="ms-1">${worker}</strong> | 📅 Date: <strong>${date}</strong> | 🏷️ Batch No: <strong>${batch}</strong>
+          </button>
+        </h2>
+        <div id="collapse-${id}" class="accordion-collapse collapse" data-bs-parent="#accordion-${id}">
+          <div class="accordion-body">
+            <ul class="list-group mb-2">
+              ${records.map(r => `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  ⏰ ${r.time} — UTS: ${r.uts} MPa, Elongation: ${r.elong}%, Conductivity: ${r.cond}% 
+                  <span class="badge bg-${r.status === 'Pass' ? 'success' : 'danger'}">${r.status}</span>
+                </li>
+              `).join('')}
+            </ul>
+            <button class="btn btn-outline-dark btn-sm" onclick='generatePDF("${worker}", "${date}", "${batch}", ${JSON.stringify(records)})'>🧾 Generate Report</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function applyFilters() {
+  const w = document.getElementById("filterWorker").value.toLowerCase();
+  const d = document.getElementById("filterDate").value;
+  const b = document.getElementById("filterBatch").value.toLowerCase();
+
+  const allItems = document.querySelectorAll("#batchHistoryList .accordion");
+  allItems.forEach(item => {
+    const text = item.innerText.toLowerCase();
+    const match = (!w || text.includes(w)) && (!d || text.includes(d)) && (!b || text.includes(b));
+    item.style.display = match ? "block" : "none";
+  });
+}
+
+function resetFilters() {
+  document.getElementById("filterWorker").value = '';
+  document.getElementById("filterDate").value = '';
+  document.getElementById("filterBatch").value = '';
+  applyFilters();
+}
+    
+async function generatePDF(worker, date, batch, records) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFontSize(16);
+  doc.text("Wire Rod Batch Report", 20, 20);
+  doc.setFontSize(12);
+  doc.text(`Worker: ${worker}`, 20, 30);
+  doc.text(`Date: ${date}`, 20, 38);
+  doc.text(`Batch No: ${batch}`, 20, 46);
+
+  let y = 60;
+  records.forEach((r, index) => {
+    doc.text(`${index + 1}. Time: ${r.time} | UTS: ${r.uts} MPa | Elong: ${r.elong}% | Cond: ${r.cond}% | Status: ${r.status}`, 20, y);
+    y += 10;
+  });
+
+  doc.save(`Batch_${batch}_Report.pdf`);
+}
+
+    function showDashboard() {
+      document.getElementById('content-area').innerHTML = '<div class="card"><h4>📊 Dashboard coming soon...</h4></div>';
+    }
+
+    //showPredictProperties();
+    document.addEventListener("DOMContentLoaded", () => {
+      const contentArea = document.getElementById("content-area");
+    
+      // Always show the form
+      showPredictProperties();
+    
+      // Restore results if needed
+      const savedResults = sessionStorage.getItem("lastResults");
+      if (savedResults) {
+        document.getElementById('results').innerHTML = savedResults;
+      }
+    });
+    
+     
+  </script>
+</body>
+</html>

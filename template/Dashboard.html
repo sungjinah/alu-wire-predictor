@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ALUPREDICT Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #3c1053, #ad5389);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #fff;
+    }
+    .sidebar {
+      background-color: #2E2E4D;
+      min-height: 100vh;
+      padding: 20px 10px;
+    }
+    .btn-sidebar {
+      background-color: #2E2E4D;
+      border: none;
+      width: 100%;
+      text-align: left;
+      padding: 10px;
+      color: white;
+      transition: background-color 0.3s;
+    }
+    .btn-sidebar:hover, .btn-sidebar.active {
+      background-color: #373760;
+      cursor: pointer;
+    }
+    .scrollable-content {
+      height: 100vh;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .kpi-card {
+      text-align: center;
+      padding: 10px;
+      border: 2px solid gold;
+      border-radius: 10px;
+      background-color: rgba(0,0,0,0.3);
+      color: #fff;
+    }
+    .highlight {
+      font-size: 1.75rem;
+      color: yellow;
+    }
+    canvas {
+      background-color: transparent !important;
+      border-radius: 10px;
+    }
+    .star-box {
+      border: 2px solid gold;
+      border-radius: 10px;
+      text-align: center;
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 10px;
+      font-weight: bold;
+      font-size: 0.9rem;
+      width: 100%;
+      max-width: 200px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row h-100">
+
+      <!-- Sidebar -->
+      <div class="col-md-2 sidebar d-flex flex-column justify-content-between">
+        <div>
+          <button class="btn-sidebar" onclick="location.href='/predict_page'">Predict Properties</button>
+          <button class="btn-sidebar" onclick="location.href='/predict_page'">Batch History</button>
+          <button class="btn-sidebar active">Dashboard</button>
+        </div>
+        <div class="d-flex align-items-center p-2 mt-4" style="cursor: pointer;" onclick="showWorkerInfo()">
+          <img src="/static/worker.png" alt="Worker" style="width: 40px; height: 40px; border-radius: 50%; background-color: white; padding: 2px;" />
+          <span class="ms-2 text-white" style="font-size: 0.9rem;">Your Profile</span>
+        </div>
+      </div>
+
+      <!-- Main -->
+      <div class="col-md-10 scrollable-content">
+        <h2 class="text-center mb-4">📊 ALUPREDICT Quality Dashboard</h2>
+
+        <div class="row mb-3">
+          <div class="col-md-3"><div class="kpi-card">No. of Workers<br><span class="highlight" id="workerCount">0</span></div></div>
+          <div class="col-md-3"><div class="kpi-card">Total Predictions<br><span class="highlight" id="totalPredictions">0</span></div></div>
+          <div class="col-md-3"><div class="kpi-card">No. of Batches<br><span class="highlight" id="batchCount">0</span></div></div>
+          <div class="col-md-3">
+            <input type="date" class="form-control mb-2">
+            <input type="date" class="form-control">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6"><canvas id="gradeChart"></canvas></div>
+          <div class="col-md-4"><canvas id="statusChart"></canvas></div>
+          <div class="col-md-2 d-flex align-items-center">
+            <div class="star-box mx-auto">🏆 Star of the Month<br><span class="highlight">Asha</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal fade" id="workerModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">👷‍♂️ Worker Profile</h5>
+          <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-dark" id="workerProfileBody">
+          <!-- filled by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    async function fetchDashboardData() {
+      const res = await fetch("/get_history");
+      const data = await res.json();
+    
+      const workerSet = new Set();
+      const batchSet = new Set();
+      const grades = {};
+      const status = { Pass: 0, Fail: 0 };
+      const workerCounts = {};
+      let predictionCount = 0;
+    
+      data.forEach(entry => {
+        workerSet.add(entry.worker);
+        batchSet.add(entry.batch);
+        workerCounts[entry.worker] = (workerCounts[entry.worker] || 0) + entry.records.length;
+    
+        entry.records.forEach(r => {
+          grades[r.grade] = (grades[r.grade] || 0) + 1;
+          status[r.status] = (status[r.status] || 0) + 1;
+          predictionCount++;
+        });
+      });
+    
+      document.getElementById("workerCount").textContent = workerSet.size;
+      document.getElementById("batchCount").textContent = batchSet.size;
+      document.getElementById("totalPredictions").textContent = predictionCount;
+    
+      renderGradeChart(grades);
+      renderStatusChart(status);
+      renderStar(workerCounts);
+    }
+    
+
+    function renderGradeChart(gradeCounts) {
+      new Chart(document.getElementById("gradeChart"), {
+        type: "bar",
+        data: {
+          labels: Object.keys(gradeCounts),
+          datasets: [{
+            label: "Grades",
+            data: Object.values(gradeCounts),
+            backgroundColor: "#4dd0e1"
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { title: { display: true, text: 'Grade Type', color: '#fff' }, ticks: { color: '#fff' } },
+            y: { beginAtZero: true, title: { display: true, text: 'Count', color: '#fff' }, ticks: { color: '#fff' } }
+          }
+        }
+      });
+    }
+
+    function renderStatusChart(statusCounts) {
+      new Chart(document.getElementById("statusChart"), {
+        type: "pie",
+        data: {
+          labels: Object.keys(statusCounts),
+          datasets: [{
+            data: Object.values(statusCounts),
+            backgroundColor: ['#00cc00', '#e60000']
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { display: false },
+            title: { display: true, text: 'Final Status Breakdown', color: '#fff' },
+            datalabels: {
+              color: '#fff',
+              formatter: (value, ctx) => {
+                const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                return ((value / total) * 100).toFixed(1) + "%";
+              }
+            }
+          }
+        },
+        plugins: [ChartDataLabels]
+      });
+    }
+
+    function showWorkerInfo() {
+      const name = localStorage.getItem("workerName") || "N/A";
+      const id = localStorage.getItem("workerId") || "N/A";
+      const hour = new Date().getHours();
+      const shift = (hour >= 20 || hour < 8) ? "Night (8PM – 8AM)" : "Day (8AM – 8PM)";
+      document.getElementById("workerProfileBody").innerHTML = `
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>ID:</strong> ${id}</p>
+        <p><strong>Role:</strong> Line Supervisor</p>
+        <p><strong>Shift:</strong> ${shift}</p>
+      `;
+      new bootstrap.Modal(document.getElementById("workerModal")).show();
+    }
+
+    document.addEventListener("DOMContentLoaded", fetchDashboardData);
+
+    function renderStar(workerCounts) {
+      const topWorker = Object.entries(workerCounts).sort((a, b) => b[1] - a[1])[0];
+      document.querySelector(".star-box .highlight").textContent = topWorker ? topWorker[0] : "N/A";
+    }
+    
+  </script>
+</body>
+</html>
