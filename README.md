@@ -1,111 +1,106 @@
-🌟 ALUPREDICT – Aluminium Wire Rod Property Prediction System
+# 🌟 ALUPREDICT – Aluminium Wire Rod Property Prediction System
 
 An AI-powered predictive system for real-time quality assessment in aluminium wire rod manufacturing.
 
-🚀 Project Overview
+---
 
-ALUPREDICT is a machine learning–based system designed to predict the following key physical properties of aluminium wire rods:
+## 🚀 Project Overview
 
-Ultimate Tensile Strength (UTS)
+**ALUPREDICT** is a machine learning–based system designed to predict critical physical properties of aluminium wire rods:
 
-Elongation
+- **Ultimate Tensile Strength (UTS)**
+- **Elongation**
+- **Conductivity**
+- **Final Grade Classification**
 
-Conductivity
+The project helps manufacturers reduce dependency on destructive testing by offering fast, accurate, real-time predictions based on process parameters such as:
 
-Final Grade Classification
+- Emulsion conditions  
+- Motor readings  
+- Cooling water flow  
+- Quenching metrics  
+- Chemical composition  
 
-It helps manufacturers reduce dependency on destructive testing by offering fast, accurate, real-time predictions based on process parameters such as:
+---
 
-Emulsion conditions
+## ✔️ System Features
 
-Motor readings
+- ✔ **Machine Learning models** (LightGBM, XGBoost, Gradient Boost, Random Forest, Extra Trees)  
+- ✔ **Flask-based backend**  
+- ✔ **Responsive HTML/CSS/JS frontend**  
+- ✔ **SQLite database for logs**  
+- ✔ **Batch history + PDF report generation**  
+- ✔ **Production dashboard**  
+- ✔ **Cloud deployment via Render.com**
 
-Cooling water flow
+---
 
-Quenching metrics
+## 🧠 Motivation
 
-Chemical composition
+Traditional QC methods for aluminium wire rods are slow, destructive, and require skilled labour. With Industry 4.0 advancements, there is a need for non-destructive, real-time, data-driven solutions.
 
-🧠 Features
+**ALUPREDICT** bridges this gap by predicting mechanical properties using machine learning models trained on synthetic industrial-like datasets.
 
-✔ Machine Learning Models (LightGBM, XGBoost, Random Forest, Gradient Boost, Extra Trees)
-✔ Flask-based backend
-✔ Responsive HTML/CSS/JS frontend
-✔ SQLite database for logs
-✔ Batch history + PDF report generation
-✔ Production dashboard
-✔ Cloud deployment via Render.com
+---
 
-🛠 Tech Stack
-Backend
+## 🔧 Tech Stack
 
-Python 3.12
+### **Backend**
+- Python 3.12  
+- Flask  
+- SQLite  
+- Pickle / Joblib  
 
-Flask
+### **Frontend**
+- HTML5, CSS3  
+- Bootstrap 5  
+- JavaScript  
+- Chart.js  
+- jsPDF  
 
-SQLite
+### **Machine Learning**
+- LightGBM  
+- XGBoost  
+- Random Forest  
+- Extra Trees  
+- Gradient Boosting  
+- Pandas, NumPy, Scikit-learn  
 
-Pickle / Joblib
+### **Deployment**
+- Render.com (Public cloud hosting)
 
-Frontend
+---
 
-HTML5, CSS3
+## 📊 Features
 
-JavaScript
+### 🔹 Machine Learning Predictions  
+Predict UTS, Elongation, and Conductivity based on **12+ process parameters**.
 
-Bootstrap 5
+### 🔹 Grade Classification  
+Automatic grade assignment using predicted values.
 
-Chart.js
+### 🔹 User-Friendly Interface  
+- Worker Login  
+- Data Entry Forms  
+- Real-Time Predictions  
 
-jsPDF
+### 🔹 Data Storage  
+All predictions saved in **predictions.db** containing:  
+- Worker ID  
+- Date & Time  
+- Process Inputs  
+- Predicted Values  
+- Final Grade  
+- Pass/Fail status  
 
-Machine Learning
+### 🔹 Visual Dashboard  
+- Total workers  
+- Batch count  
+- Pass/fail distribution  
+- Star worker of the month  
+- Grade distribution charts  
 
-LightGBM
+### 🔹 Batch History & PDF Reports  
+Download batch reports with **one click**.
 
-XGBoost
-
-Random Forest
-
-Extra Trees
-
-Gradient Boosting
-
-Pandas, NumPy, Scikit-learn
-
-📁 Project Structure
-/models
-/templates
-/static
-predictions.db
-app.py
-README.md
-
-📊 Model Performance (Summary)
-Property	Best Model	R² Score
-UTS	LightGBM	0.9387
-Elongation	LightGBM	0.9436
-Conductivity	XGBoost	0.9665
-💻 Installation
-1️⃣ Clone the repository
-git clone https://github.com/sungjinah/alu-wire-predictor.git
-
-2️⃣ Install dependencies
-pip install -r requirements.txt
-
-3️⃣ Run the Flask server
-python app.py
-
-4️⃣ Open in browser
-http://127.0.0.1:5000/
-
-👩‍💻 Team Members
-
-Sanjana Patil (21CE1193)
-
-Lavanya Talele (21CE1160)
-
-Aditya Raj (21CE1156)
-
-Supervisor: Ms. Hemlata Biradar
-Institute: Ramrao Adik Institute of Technology
+---
