@@ -104,3 +104,11 @@ All predictions saved in **predictions.db** containing:
 Download batch reports with **one click**.
 
 ---
+
+## 👥 Team Members
+
+- **Sanjana Patil **
+- **Lavanya Talele **
+- **Aditya Raj **
+
+**Supervisor:** Ms. Hemlata Biradar  
